@@ -1,0 +1,10 @@
+# Default fallback
+
+* @abcxyz/breakglass
+
+# infrastructure owns all files
+
+* @abcxyz/infrastructure-team
+
+# readability - remove if language not needed
+
