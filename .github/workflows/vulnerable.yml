@@ -1,0 +1,32 @@
+name: Vulnerable Pwn Request
+
+# VULNERABILITY: 'pull_request_target' runs in the context of the BASE repository.
+# This means it has access to Repository Secrets and a Read/Write GITHUB_TOKEN.
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+jobs:
+  unsafe-build:
+    runs-on: ubuntu-latest
+    steps:
+      # VULNERABILITY: Explicitly checking out the PR's code (the attacker's code).
+      # Normally, pull_request_target checks out the base repo, but here we force
+      # it to grab the attacker's commit hash.
+      - name: Checkout Untrusted Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # VULNERABILITY: Running a build script from the attacker's code.
+      # The attacker can modify 'package.json' (preinstall/postinstall scripts) 
+      # or 'Makefile' to exfiltrate secrets because this workflow environment
+      # contains the secrets from the target repo.
+      - name: Build and Test
+        run: |
+          npm install
+          npm test
+        env:
+          # These secrets are now accessible to the attacker's script
+          SUPER_SECRET_TOKEN: ${{ secrets.SUPER_SECRET_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
